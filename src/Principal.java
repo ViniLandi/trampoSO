@@ -7,14 +7,26 @@ import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.data.general.DefaultPieDataset;
+
 import javax.swing.JTree;
 import javax.swing.JScrollPane;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JMenu;
+import javax.swing.event.TreeSelectionListener;
+import javax.swing.event.TreeSelectionEvent;
 
 public class Principal extends JFrame {
 
 	private static final long serialVersionUID = 1L;
 	private JPanel contentPane;
 	private JTree tree = new JTree();
+	private DefaultMutableTreeNode nodePai;
 
 	/**
 	 * Launch the application.
@@ -37,7 +49,7 @@ public class Principal extends JFrame {
 	 */
 	public Principal() {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 641, 410);
+		setBounds(100, 100, 641, 741);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 
@@ -54,21 +66,73 @@ public class Principal extends JFrame {
 		}
 		
 		JScrollPane scrollPane = new JScrollPane();
-		scrollPane.setBounds(10, 11, 605, 349);
+		scrollPane.setBounds(10, 33, 605, 349);
 		contentPane.add(scrollPane);
+		tree.addTreeSelectionListener(new TreeSelectionListener() {
+			public void valueChanged(TreeSelectionEvent e) {
+				DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
+				
+                if (selectedNode != null) {
+                    String selectedItem = selectedNode.toString();
+                    System.out.println("Você selecionou: " + selectedItem);
+
+                    if (selectedItem.equals("Arquivo 1")) {
+                        System.out.println("Ação para Arquivo 1");
+                    }
+                }
+			}
+		});
 		scrollPane.setViewportView(tree);
+		
+		JMenuBar menuBar = new JMenuBar();
+		menuBar.setBounds(0, 0, 625, 22);
+		contentPane.add(menuBar);
+		
+		JMenu mnNewMenu = new JMenu("Compactação");
+		menuBar.add(mnNewMenu);
+		
+		JMenuItem mntmNewMenuItem_3 = new JMenuItem("Compactar");
+		mnNewMenu.add(mntmNewMenuItem_3);
+		
+		JMenuItem mntmNewMenuItem_4 = new JMenuItem("Descompactar");
+		mnNewMenu.add(mntmNewMenuItem_4);
+		
+		JMenu mnNewMenu_1 = new JMenu("Criptografia");
+		menuBar.add(mnNewMenu_1);
+		
+		JMenuItem mntmNewMenuItem = new JMenuItem("Criptografar");
+		mnNewMenu_1.add(mntmNewMenuItem);
+		
+		JMenuItem mntmNewMenuItem_1 = new JMenuItem("Descriptografar");
+		mnNewMenu_1.add(mntmNewMenuItem_1);
+		
+		JPanel chartPanel = createPieChart();
+		chartPanel.setBounds(10, 393, 605, 300);
+		contentPane.add(chartPanel);
 	}
 	
 	private DefaultMutableTreeNode buildTree(File file) {
         long size = calculateSize(file);
-	    DefaultMutableTreeNode node = new DefaultMutableTreeNode(file.getName() + " | Size: " + size + " bytes");
-	    if (file.isDirectory() && file.listFiles() != null) {
+	    DefaultMutableTreeNode node = new DefaultMutableTreeNode(file);
+	    
+	    if (file.isDirectory()) {
+	    	if (file.listFiles() != null)
 	        for (File child : file.listFiles()) {
 	            node.add(buildTree(child));
 	        }
 	    }
-	    return node;
+	    
+	    return node;	    
 	}
+	
+    private String getFileExtension(File file) {
+        String fileName = file.getName();
+        int lastDotIndex = fileName.lastIndexOf('.');
+        if (lastDotIndex > 0 && lastDotIndex < fileName.length() - 1) {
+            return fileName.substring(lastDotIndex + 1);
+        }
+        return null;
+    }
 	
 	private long calculateSize(File file) {
 	    if (file.isFile()) {
@@ -83,9 +147,66 @@ public class Principal extends JFrame {
 	    return size;
 	}
 
+	private String unidadeMedida(long tamanho) {
+		String retorno;
+		
+		int x = 0;
+		for (int i = 0; i < 4; i++) {
+			if (tamanho >= 1024) {
+				tamanho = tamanho / 1024;
+				x++;
+			} else {
+				break;
+			}
+		}
+		
+		switch (x) {
+		case 0: {
+			retorno = "Bytes";
+			break;
+		}
+		case 1: {
+			retorno = "KB";
+			break;
+		}
+		case 2: {
+			retorno = "MB";
+			break;
+		}
+		case 3: {
+			retorno = "GB";
+			break;
+		}
+		default:
+			throw new IllegalArgumentException("Unexpected value: " + x);
+		}
+		
+		return tamanho + " " + retorno;
+	}
 
 	private void loadDirectoryTree(File root) {
-	    DefaultMutableTreeNode rootNode = buildTree(root);
-	    tree.setModel(new DefaultTreeModel(rootNode));
+	    nodePai = buildTree(root);
+	    tree.setModel(new DefaultTreeModel(nodePai));
 	}
+	
+    public ChartPanel createPieChart() {
+        // Dados do gráfico
+        DefaultPieDataset dataset = new DefaultPieDataset();
+        dataset.setValue("Categoria A", 40);
+        dataset.setValue("Categoria B", 30);
+        dataset.setValue("Categoria C", 20);
+        dataset.setValue("Categoria D", 10);
+
+        // Criar o gráfico de pizza
+        JFreeChart chart = ChartFactory.createPieChart(
+            "Porcentagem por arquivos no diretório", // Título
+            dataset,                      // Dados
+            true,                         // Mostrar legenda
+            true,                         // Usar tooltips
+            false                         // Não gerar URL
+        );
+
+        // Painel do gráfico
+        return new ChartPanel(chart);
+    }
 }
