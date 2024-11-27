@@ -1,7 +1,7 @@
 import javax.crypto.Cipher;
-import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import javax.swing.JOptionPane;
 import javax.crypto.spec.IvParameterSpec;
 import java.io.File;
 import java.io.FileInputStream;
@@ -55,10 +55,23 @@ public class CriptografiaUtils {
 
         // Substitui o arquivo original pelo arquivo criptografado
         if (!inputFile.delete() || !tempFile.renameTo(inputFile)) {
+            JOptionPane.showMessageDialog(
+                    null,
+                    "Erro ao substituir o arquivo original pelo criptografado.",
+                    "Erro",
+                    JOptionPane.ERROR_MESSAGE
+            );
             throw new Exception("Erro ao substituir o arquivo original pelo criptografado.");
         }
 
         System.out.println("Arquivo criptografado com sucesso: " + inputFile.getAbsolutePath());
+        
+        JOptionPane.showMessageDialog(
+                null,
+                "Arquivo criptografado com sucesso: " + inputFile.getAbsolutePath(),
+                "Sucesso",
+                JOptionPane.INFORMATION_MESSAGE
+        );
     }
 
     
@@ -77,6 +90,12 @@ public class CriptografiaUtils {
             // Ler o IV no início do arquivo criptografado
             byte[] iv = new byte[16];
             if (fis.read(iv) != iv.length) {
+                JOptionPane.showMessageDialog(
+                        null,
+                        "Arquivo corrompido: não foi possível ler o arquivo.",
+                        "Erro",
+                        JOptionPane.ERROR_MESSAGE
+                );
                 throw new IllegalArgumentException("Arquivo corrompido: não foi possível ler o IV.");
             }
             IvParameterSpec ivParams = new IvParameterSpec(iv);
@@ -100,10 +119,23 @@ public class CriptografiaUtils {
 
         // Substitui o arquivo criptografado pelo arquivo original
         if (!inputFile.delete() || !tempFile.renameTo(inputFile)) {
+            JOptionPane.showMessageDialog(
+                    null,
+                    "Erro ao substituir o arquivo criptografado pelo original.",
+                    "Erro",
+                    JOptionPane.ERROR_MESSAGE
+            );
             throw new Exception("Erro ao substituir o arquivo criptografado pelo original.");
         }
 
         System.out.println("Arquivo descriptografado com sucesso: " + inputFile.getAbsolutePath());
+        
+        JOptionPane.showMessageDialog(
+                null,
+                "Arquivo descriptografado com sucesso: " + inputFile.getAbsolutePath(),
+                "Sucesso",
+                JOptionPane.INFORMATION_MESSAGE
+        );
     }
 
 

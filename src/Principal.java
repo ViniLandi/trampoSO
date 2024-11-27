@@ -1,5 +1,7 @@
 import java.awt.EventQueue;
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -20,17 +22,18 @@ import javax.swing.JMenuItem;
 import javax.swing.JMenu;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.event.TreeSelectionEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
 
 public class Principal extends JFrame {
 
 	private static final long serialVersionUID = 1L;
 	private JPanel contentPane;
-	private JTree tree = new JTree();
-	private DefaultMutableTreeNode nodePai;
+	private JTree tree;
 	private DefaultMutableTreeNode selectedNode;
-	private CriptografiaUtils criptografia;
+	private JPanel chartPanel;
+	private DefaultMutableTreeNode nodePai;
+	private TreeUtils treeUtils = new TreeUtils();
 	
 
 	/**
@@ -54,37 +57,38 @@ public class Principal extends JFrame {
 	 */
 	public Principal() {
 		
-		
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 641, 741);
+		setLocationRelativeTo(null);
+		setResizable(false);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 
 		setContentPane(contentPane);
 		contentPane.setLayout(null);
 		
-		JFileChooser fileChooser = new JFileChooser();
-		fileChooser.setBounds(10, 11, 117, 104);
-		fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-		int result = fileChooser.showOpenDialog(this);
-		if (result == JFileChooser.APPROVE_OPTION) {
-		    File selectedDirectory = fileChooser.getSelectedFile();
-		    loadDirectoryTree(selectedDirectory);
-		}
-		
 		JScrollPane scrollPane = new JScrollPane();
 		scrollPane.setBounds(10, 33, 605, 349);
 		contentPane.add(scrollPane);
+		tree = new JTree(new DefaultMutableTreeNode());
+		tree.setRootVisible(false);
+		tree.setCellRenderer(new CustomTreeCellRenderer(treeUtils));
 		tree.addTreeSelectionListener(new TreeSelectionListener() {
 			public void valueChanged(TreeSelectionEvent e) {
-				 selectedNode = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
+				selectedNode = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
 				
                 if (selectedNode != null) {
-                    String selectedItem = selectedNode.toString();
-                    System.out.println("Você selecionou: " + selectedItem);
-
-                    if (selectedItem.equals("Arquivo 1")) {
-                        System.out.println("Ação para Arquivo 1");
+                    System.out.println("Você selecionou: " + treeUtils.getFileByNode(selectedNode));
+                    File arquivoSelecionado = treeUtils.getFileByNode(selectedNode);
+                    if (arquivoSelecionado.isDirectory()) {
+//                    	É diretório
+                    	Map<String, Integer> extensionCounts = new HashMap<>();
+                        readFilesRecursively(arquivoSelecionado, extensionCounts);
+                        contentPane.remove(chartPanel);
+                        createPieChart(extensionCounts);
+                    } else {
+//                    	Não é diretório
+                    	System.out.println("Não é diretório");
                     }
                 }
 			}
@@ -94,6 +98,26 @@ public class Principal extends JFrame {
 		JMenuBar menuBar = new JMenuBar();
 		menuBar.setBounds(0, 0, 625, 22);
 		contentPane.add(menuBar);
+		
+		JMenu mnNewMenu_2 = new JMenu("Arquivo");
+		menuBar.add(mnNewMenu_2);
+		
+		JMenuItem mntmNewMenuItem_2 = new JMenuItem("Selecionar diretório");
+		mntmNewMenuItem_2.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				trocarDiretorio();
+			}
+		});
+		mnNewMenu_2.add(mntmNewMenuItem_2);
+		
+		JMenuItem mntmNewMenuItem_5 = new JMenuItem("Atualizar");
+		mntmNewMenuItem_5.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				nodePai = treeUtils.atualizar(nodePai);
+				tree.setModel(new DefaultTreeModel(nodePai));
+			}
+		});
+		mnNewMenu_2.add(mntmNewMenuItem_5);
 		
 		JMenu mnNewMenu = new JMenu("Compactação");
 		menuBar.add(mnNewMenu);
@@ -111,7 +135,7 @@ public class Principal extends JFrame {
 		mntmNewMenuItem.addActionListener(e -> {
 			
 		    if (selectedNode != null) {
-		        Object userObject = selectedNode.getUserObject();
+		        Object userObject = treeUtils.getFileByNode(selectedNode);
 		        if (userObject instanceof File) {
 		            File selectedFile = (File) userObject;
 		            System.out.println("Arquivo selecionado para criptografar: " + selectedFile.getAbsolutePath());
@@ -135,7 +159,7 @@ public class Principal extends JFrame {
 		mntmNewMenuItem_1.addActionListener(e -> {
 			
 		    if (selectedNode != null) {
-		        Object userObject = selectedNode.getUserObject();
+		        Object userObject = treeUtils.getFileByNode(selectedNode);
 		        if (userObject instanceof File) {
 		            File selectedFile = (File) userObject;
 		            System.out.println("Arquivo selecionado para descriptografar: " + selectedFile.getAbsolutePath());
@@ -155,23 +179,35 @@ public class Principal extends JFrame {
 		
 		mnNewMenu_1.add(mntmNewMenuItem_1);
 		
-		JPanel chartPanel = createPieChart();
-		chartPanel.setBounds(10, 393, 605, 300);
-		contentPane.add(chartPanel);
+		createPieChart(new HashMap<>());
 	}
 	
-	private DefaultMutableTreeNode buildTree(File file) {
-        long size = calculateSize(file);
-	    DefaultMutableTreeNode node = new DefaultMutableTreeNode(file);
-	    
-	    if (file.isDirectory()) {
-	    	if (file.listFiles() != null)
-	        for (File child : file.listFiles()) {
-	            node.add(buildTree(child));
-	        }
-	    }
-	    
-	    return node;	    
+	private void trocarDiretorio() {
+		JFileChooser fileChooser = new JFileChooser();
+		fileChooser.setBounds(10, 11, 117, 104);
+		fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+		int result = fileChooser.showOpenDialog(this);
+		if (result == JFileChooser.APPROVE_OPTION) {
+			File diretorioRaiz = fileChooser.getSelectedFile();
+    		nodePai = treeUtils.loadDirectoryTree(nodePai, diretorioRaiz);
+//			Thread thread = new Thread() {
+//			    @Override
+//			    public void run() {
+//			        for (int i = 1; i <= 10; i++) {
+//			        	if (i == 1)
+//			            System.out.println("Thread: " + TreeUtils.leitura);
+//			            try {
+//			                Thread.sleep(500);
+//			            } catch (InterruptedException e) {
+//			                e.printStackTrace();
+//			            }
+//			        }
+//			    }
+//			};
+//			thread.run();
+			tree.setModel(new DefaultTreeModel(nodePai));
+		}
+		tree.setRootVisible(true);
 	}
 	
     private String getFileExtension(File file) {
@@ -180,82 +216,50 @@ public class Principal extends JFrame {
         if (lastDotIndex > 0 && lastDotIndex < fileName.length() - 1) {
             return fileName.substring(lastDotIndex + 1);
         }
-        return null;
+        return "sem_extensao";
     }
 	
-	private long calculateSize(File file) {
-	    if (file.isFile()) {
-	        return file.length();
-	    }
-	    long size = 0;
-	    if (file.listFiles() != null) {
-		    for (File child : file.listFiles()) {
-		        size += calculateSize(child);
-		    }
-	    }
-	    return size;
-	}
-
-	private String unidadeMedida(long tamanho) {
-		String retorno;
-		
-		int x = 0;
-		for (int i = 0; i < 4; i++) {
-			if (tamanho >= 1024) {
-				tamanho = tamanho / 1024;
-				x++;
-			} else {
-				break;
-			}
-		}
-		
-		switch (x) {
-		case 0: {
-			retorno = "Bytes";
-			break;
-		}
-		case 1: {
-			retorno = "KB";
-			break;
-		}
-		case 2: {
-			retorno = "MB";
-			break;
-		}
-		case 3: {
-			retorno = "GB";
-			break;
-		}
-		default:
-			throw new IllegalArgumentException("Unexpected value: " + x);
-		}
-		
-		return tamanho + " " + retorno;
-	}
-
-	private void loadDirectoryTree(File root) {
-	    nodePai = buildTree(root);
-	    tree.setModel(new DefaultTreeModel(nodePai));
-	}
+    // Método recursivo para ler arquivos e subpastas
+    private void readFilesRecursively(File folder, Map<String, Integer> extensionCounts) {
+        File[] files = folder.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    // Chamada recursiva para subpastas
+                    readFilesRecursively(file, extensionCounts);
+                } else {
+                    // Processar arquivo
+                    String extension = getFileExtension(file);
+                    extensionCounts.put(extension, extensionCounts.getOrDefault(extension, 0) + 1);
+                }
+            }
+        }
+    }
 	
-    public ChartPanel createPieChart() {
+    public void createPieChart(Map<String, Integer> extensionCounts) {
         // Dados do gráfico
+    	int totalFiles = extensionCounts.values().stream().mapToInt(Integer::intValue).sum();
         DefaultPieDataset dataset = new DefaultPieDataset();
-        dataset.setValue("Categoria A", 40);
-        dataset.setValue("Categoria B", 30);
-        dataset.setValue("Categoria C", 20);
-        dataset.setValue("Categoria D", 10);
+        for (Map.Entry<String, Integer> entry : extensionCounts.entrySet()) {
+            int count = entry.getValue();
+            double percentage = (count * 100.0) / totalFiles;
+        	dataset.setValue(entry.getKey() + " (" + String.format("%.2f", percentage) + "%)", count);
+		}
 
         // Criar o gráfico de pizza
-        JFreeChart chart = ChartFactory.createPieChart(
+        JFreeChart chart = ChartFactory.createPieChart3D(
             "Porcentagem por arquivos no diretório", // Título
             dataset,                      // Dados
             true,                         // Mostrar legenda
             true,                         // Usar tooltips
             false                         // Não gerar URL
         );
-
+        
         // Painel do gráfico
-        return new ChartPanel(chart);
+        chartPanel = new ChartPanel(chart);
+		chartPanel.setBounds(10, 393, 605, 300);
+		contentPane.add(chartPanel);
+        chartPanel.revalidate();
+        chartPanel.repaint();
     }
 }
