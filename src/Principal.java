@@ -20,6 +20,8 @@ import javax.swing.JMenuItem;
 import javax.swing.JMenu;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.event.TreeSelectionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class Principal extends JFrame {
 
@@ -27,6 +29,9 @@ public class Principal extends JFrame {
 	private JPanel contentPane;
 	private JTree tree = new JTree();
 	private DefaultMutableTreeNode nodePai;
+	private DefaultMutableTreeNode selectedNode;
+	private CriptografiaUtils criptografia;
+	
 
 	/**
 	 * Launch the application.
@@ -48,6 +53,8 @@ public class Principal extends JFrame {
 	 * Create the frame.
 	 */
 	public Principal() {
+		
+		
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 641, 741);
 		contentPane = new JPanel();
@@ -70,7 +77,7 @@ public class Principal extends JFrame {
 		contentPane.add(scrollPane);
 		tree.addTreeSelectionListener(new TreeSelectionListener() {
 			public void valueChanged(TreeSelectionEvent e) {
-				DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
+				 selectedNode = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
 				
                 if (selectedNode != null) {
                     String selectedItem = selectedNode.toString();
@@ -101,9 +108,51 @@ public class Principal extends JFrame {
 		menuBar.add(mnNewMenu_1);
 		
 		JMenuItem mntmNewMenuItem = new JMenuItem("Criptografar");
+		mntmNewMenuItem.addActionListener(e -> {
+			
+		    if (selectedNode != null) {
+		        Object userObject = selectedNode.getUserObject();
+		        if (userObject instanceof File) {
+		            File selectedFile = (File) userObject;
+		            System.out.println("Arquivo selecionado para criptografar: " + selectedFile.getAbsolutePath());
+		            try {
+						CriptografiaUtils.criptografarArquivo(selectedFile);
+					} catch (Exception e1) {
+						
+						e1.printStackTrace();
+					}
+		        } else {
+		            System.out.println("O nó selecionado não é um arquivo.");
+		        }
+		    } else {
+		        System.out.println("Nenhum nó foi selecionado.");
+		    }
+		});
+	
 		mnNewMenu_1.add(mntmNewMenuItem);
 		
 		JMenuItem mntmNewMenuItem_1 = new JMenuItem("Descriptografar");
+		mntmNewMenuItem_1.addActionListener(e -> {
+			
+		    if (selectedNode != null) {
+		        Object userObject = selectedNode.getUserObject();
+		        if (userObject instanceof File) {
+		            File selectedFile = (File) userObject;
+		            System.out.println("Arquivo selecionado para descriptografar: " + selectedFile.getAbsolutePath());
+		            try {
+						CriptografiaUtils.descriptografarArquivo(selectedFile);
+					} catch (Exception e1) {
+						
+						e1.printStackTrace();
+					}
+		        } else {
+		            System.out.println("O nó selecionado não é um arquivo.");
+		        }
+		    } else {
+		        System.out.println("Nenhum nó foi selecionado.");
+		    }
+		});
+		
 		mnNewMenu_1.add(mntmNewMenuItem_1);
 		
 		JPanel chartPanel = createPieChart();
