@@ -123,9 +123,49 @@ public class Principal extends JFrame {
 		menuBar.add(mnNewMenu);
 		
 		JMenuItem mntmNewMenuItem_3 = new JMenuItem("Compactar");
+		mntmNewMenuItem_3.addActionListener(e -> {
+			
+		    if (selectedNode != null) {
+		        Object userObject = treeUtils.getFileByNode(selectedNode);
+		        if (userObject instanceof File) {
+		            File selectedFile = (File) userObject;
+		            System.out.println("Arquivo selecionado para compactar: " + selectedFile.getAbsolutePath());
+		            try {
+						CompactacaoUtils.compactar(selectedFile);
+					} catch (Exception e1) {
+						
+						e1.printStackTrace();
+					}
+		        } else {
+		            System.out.println("O nó selecionado não é um arquivo.");
+		        }
+		    } else {
+		        System.out.println("Nenhum nó foi selecionado.");
+		    }
+		});
 		mnNewMenu.add(mntmNewMenuItem_3);
 		
 		JMenuItem mntmNewMenuItem_4 = new JMenuItem("Descompactar");
+		mntmNewMenuItem_4.addActionListener(e -> {
+			
+		    if (selectedNode != null) {
+		        Object userObject = treeUtils.getFileByNode(selectedNode);
+		        if (userObject instanceof File) {
+		            File selectedFile = (File) userObject;
+		            System.out.println("Arquivo selecionado para descompactar: " + selectedFile.getAbsolutePath());
+		            try {
+						CompactacaoUtils.descompactar(selectedFile);
+					} catch (Exception e1) {
+						
+						e1.printStackTrace();
+					}
+		        } else {
+		            System.out.println("O nó selecionado não é um arquivo.");
+		        }
+		    } else {
+		        System.out.println("Nenhum nó foi selecionado.");
+		    }
+		});
 		mnNewMenu.add(mntmNewMenuItem_4);
 		
 		JMenu mnNewMenu_1 = new JMenu("Criptografia");
