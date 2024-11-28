@@ -2,6 +2,7 @@ import java.awt.EventQueue;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -24,6 +25,7 @@ import javax.swing.event.TreeSelectionListener;
 import javax.swing.event.TreeSelectionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import javax.swing.ScrollPaneConstants;
 
 public class Principal extends JFrame {
 
@@ -34,6 +36,7 @@ public class Principal extends JFrame {
 	private JPanel chartPanel;
 	private DefaultMutableTreeNode nodePai;
 	private TreeUtils treeUtils = new TreeUtils();
+	private JScrollPane scrollPaneChart = new JScrollPane();
 	
 
 	/**
@@ -58,9 +61,8 @@ public class Principal extends JFrame {
 	public Principal() {
 		
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 641, 741);
+		setBounds(100, 100, 1428, 741);
 		setLocationRelativeTo(null);
-		setResizable(false);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 
@@ -68,7 +70,7 @@ public class Principal extends JFrame {
 		contentPane.setLayout(null);
 		
 		JScrollPane scrollPane = new JScrollPane();
-		scrollPane.setBounds(10, 33, 605, 349);
+		scrollPane.setBounds(10, 33, 605, 658);
 		contentPane.add(scrollPane);
 		tree = new JTree(new DefaultMutableTreeNode());
 		tree.setRootVisible(false);
@@ -82,9 +84,10 @@ public class Principal extends JFrame {
                     File arquivoSelecionado = treeUtils.getFileByNode(selectedNode);
                     if (arquivoSelecionado.isDirectory()) {
 //                    	É diretório
-                    	Map<String, Integer> extensionCounts = new HashMap<>();
+//                    	Map<String, Integer> extensionCounts = new HashMap<>();
+                    	Map<String, Long> extensionCounts = new HashMap<>();
                         readFilesRecursively(arquivoSelecionado, extensionCounts);
-                        contentPane.remove(chartPanel);
+                        scrollPaneChart.remove(chartPanel);
                         createPieChart(extensionCounts);
                     } else {
 //                    	Não é diretório
@@ -96,7 +99,7 @@ public class Principal extends JFrame {
 		scrollPane.setViewportView(tree);
 		
 		JMenuBar menuBar = new JMenuBar();
-		menuBar.setBounds(0, 0, 625, 22);
+		menuBar.setBounds(0, 0, 1412, 22);
 		contentPane.add(menuBar);
 		
 		JMenu mnNewMenu_2 = new JMenu("Arquivo");
@@ -218,6 +221,10 @@ public class Principal extends JFrame {
 		});
 		
 		mnNewMenu_1.add(mntmNewMenuItem_1);
+		scrollPaneChart.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
+		scrollPaneChart.setBounds(633, 33, 769, 658);
+		contentPane.add(scrollPaneChart);
 		
 		createPieChart(new HashMap<>());
 	}
@@ -260,7 +267,10 @@ public class Principal extends JFrame {
     }
 	
     // Método recursivo para ler arquivos e subpastas
-    private void readFilesRecursively(File folder, Map<String, Integer> extensionCounts) {
+    private void readFilesRecursively(File folder, 
+//    		Map<String, Integer> extensionCounts
+    		Map<String, Long> extensionCounts
+    		) {
         File[] files = folder.listFiles();
         if (files != null) {
             for (File file : files) {
@@ -270,20 +280,27 @@ public class Principal extends JFrame {
                 } else {
                     // Processar arquivo
                     String extension = getFileExtension(file);
-                    extensionCounts.put(extension, extensionCounts.getOrDefault(extension, 0) + 1);
+//                    extensionCounts.put(extension, extensionCounts.getOrDefault(extension, 0) + 1);
+                    extensionCounts.put(extension, extensionCounts.getOrDefault(extension, 0L) + file.length());
                 }
             }
         }
     }
-	
-    public void createPieChart(Map<String, Integer> extensionCounts) {
+
+//    public void createPieChart(Map<String, Integer> extensionCounts) {
+    public void createPieChart(Map<String, Long> extensionCounts) {
         // Dados do gráfico
-    	int totalFiles = extensionCounts.values().stream().mapToInt(Integer::intValue).sum();
+//    	int totalFiles = extensionCounts.values().stream().mapToInt(Integer::intValue).sum();
+    	Long totalSize = extensionCounts.values().stream().mapToLong(Long::longValue).sum();
         DefaultPieDataset dataset = new DefaultPieDataset();
-        for (Map.Entry<String, Integer> entry : extensionCounts.entrySet()) {
-            int count = entry.getValue();
-            double percentage = (count * 100.0) / totalFiles;
-        	dataset.setValue(entry.getKey() + " (" + String.format("%.2f", percentage) + "%)", count);
+//        for (Map.Entry<String, Integer> entry : extensionCounts.entrySet()) {
+        for (Map.Entry<String, Long> entry : extensionCounts.entrySet()) {
+//            int count = entry.getValue();
+        	Long size = entry.getValue();
+//            double percentage = (size * 100.0) / totalFiles;
+            double percentage = (size * 100.0) / totalSize;
+//        	dataset.setValue(entry.getKey() + " (" + String.format("%.2f", percentage) + "%)", count);
+        	dataset.setValue(entry.getKey() + " (" + treeUtils.formatFileSize(size) + ") (" + String.format("%.2f", percentage) + "%) ", size);
 		}
 
         // Criar o gráfico de pizza
@@ -294,11 +311,10 @@ public class Principal extends JFrame {
             true,                         // Usar tooltips
             false                         // Não gerar URL
         );
-        
-        // Painel do gráfico
-        chartPanel = new ChartPanel(chart);
-		chartPanel.setBounds(10, 393, 605, 300);
-		contentPane.add(chartPanel);
+        		
+		// Painel do gráfico
+		chartPanel = new ChartPanel(chart);
+		scrollPaneChart.setViewportView(chartPanel);
         chartPanel.revalidate();
         chartPanel.repaint();
     }

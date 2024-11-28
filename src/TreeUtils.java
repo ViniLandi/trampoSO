@@ -37,11 +37,11 @@ public class TreeUtils {
 	        return file.length();
 	    }
 	    long size = 0;
-	    if (file.listFiles() != null) {
-		    for (File child : file.listFiles()) {
-		        size += calculateSize(child);
-		    }
-	    }
+//	    if (file.listFiles() != null) {
+//		    for (File child : file.listFiles()) {
+//		        size += calculateSize(child);
+//		    }
+//	    }
 	    return size;
 	}
 

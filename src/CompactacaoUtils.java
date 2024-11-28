@@ -4,7 +4,8 @@ import java.util.zip.*;
 public class CompactacaoUtils {
 
     public static void compactar(File arquivo) throws IOException {
-        if (!arquivo.exists() || !arquivo.isFile()) {
+//    	|| !arquivo.isFile()
+        if (!arquivo.exists() ) {
             throw new IllegalArgumentException("O arquivo especificado não é válido.");
         }
 
