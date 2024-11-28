@@ -10,30 +10,25 @@ import java.security.SecureRandom;
 
 public class CriptografiaUtils {
 
-    // Chave fixa no backend (16 bytes = 128 bits)
-    private static final byte[] SECRET_KEY = "chave12345678901".getBytes(); // Substitua pela sua chave fixa
-    private static final byte[] IV = new byte[16]; // Vetor de inicialização (pode ser fixo ou gerado aleatoriamente)
+    private static final byte[] SECRET_KEY = "chave12345678901".getBytes();
+    private static final byte[] IV = new byte[16];
 
     static {
-        // Inicializa o vetor IV com valores aleatórios (ou fixos)
         new SecureRandom().nextBytes(IV);
     }
 
     public static void criptografarArquivo(File inputFile) throws Exception {
-        // Configurar o cipher AES no modo CBC com padding PKCS5
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
         SecretKey secretKey = new SecretKeySpec(SECRET_KEY, "AES");
         byte[] iv = new byte[16];
-        new SecureRandom().nextBytes(iv); // Gera IV aleatório
+        new SecureRandom().nextBytes(iv);
         IvParameterSpec ivParams = new IvParameterSpec(iv);
 
-        // Criação do arquivo temporário para a criptografia
         File tempFile = new File(inputFile.getAbsolutePath() + ".tmp");
 
         try (FileInputStream fis = new FileInputStream(inputFile);
              FileOutputStream fos = new FileOutputStream(tempFile)) {
 
-            // Salvar o IV no início do arquivo criptografado
             fos.write(iv);
 
             cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivParams);
@@ -53,7 +48,6 @@ public class CriptografiaUtils {
             }
         }
 
-        // Substitui o arquivo original pelo arquivo criptografado
         if (!inputFile.delete() || !tempFile.renameTo(inputFile)) {
             JOptionPane.showMessageDialog(
                     null,
@@ -77,17 +71,14 @@ public class CriptografiaUtils {
     
     
     public static void descriptografarArquivo(File inputFile) throws Exception {
-        // Configurar o cipher AES no modo CBC com padding PKCS5
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
         SecretKey secretKey = new SecretKeySpec(SECRET_KEY, "AES");
 
-        // Criação do arquivo temporário para a descriptografia
         File tempFile = new File(inputFile.getAbsolutePath() + ".tmp");
 
         try (FileInputStream fis = new FileInputStream(inputFile);
              FileOutputStream fos = new FileOutputStream(tempFile)) {
 
-            // Ler o IV no início do arquivo criptografado
             byte[] iv = new byte[16];
             if (fis.read(iv) != iv.length) {
                 JOptionPane.showMessageDialog(
@@ -117,7 +108,6 @@ public class CriptografiaUtils {
             }
         }
 
-        // Substitui o arquivo criptografado pelo arquivo original
         if (!inputFile.delete() || !tempFile.renameTo(inputFile)) {
             JOptionPane.showMessageDialog(
                     null,

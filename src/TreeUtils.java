@@ -4,7 +4,6 @@ import javax.swing.tree.DefaultMutableTreeNode;
 
 public class TreeUtils {
 
-//	public static long leitura = 0;
 	
 	public DefaultMutableTreeNode atualizar(DefaultMutableTreeNode nodePai) {
 		if (nodePai != null)
@@ -12,36 +11,33 @@ public class TreeUtils {
 		return null;
 	}
 	
-	public DefaultMutableTreeNode buildTree(File file) {
-        long size = calculateSize(file);
+	public DefaultMutableTreeNode buildTree(File file, Boolean root) {
+        long size = calculateSize(file, root);
         
 	    DefaultMutableTreeNode node = new DefaultMutableTreeNode(file + " (" + formatFileSize(size) + ")"); // NÃO MEXER NISTO (APENAS SE SOUBER O QUE ESTÁ FAZENDO)
 
 	    if (file.isDirectory()) {
 	    	if (file.listFiles() != null) {
 		        for (File child : file.listFiles()) {
-		            node.add(buildTree(child));
+		            node.add(buildTree(child, false));
 		        }
 	    	} 
 	    }
-//	    else {
-//	        leitura += size;
-//	        System.out.println(leitura);
-//	    }
 	    
 	    return node;	    
 	}
 	
-	public long calculateSize(File file) {
+	public long calculateSize(File file, Boolean root) {
 	    if (file.isFile()) {
 	        return file.length();
 	    }
 	    long size = 0;
-//	    if (file.listFiles() != null) {
-//		    for (File child : file.listFiles()) {
-//		        size += calculateSize(child);
-//		    }
-//	    }
+//	    root && 
+	    if (file.listFiles() != null) {
+		    for (File child : file.listFiles()) {
+		        size += calculateSize(child, root);
+		    }
+	    }
 	    return size;
 	}
 
@@ -53,10 +49,26 @@ public class TreeUtils {
 	}
 
 	public DefaultMutableTreeNode loadDirectoryTree(DefaultMutableTreeNode nodePai, File root) {
-//		leitura = 0;
-	    nodePai = buildTree(root);
+	    nodePai = buildTree(root, true);
 	    return nodePai;
 	}
+	
+    public String getFileExtension(File file) {
+        String fileName = file.getName();
+        int lastDotIndex = fileName.lastIndexOf('.');
+        if (lastDotIndex > 0 && lastDotIndex < fileName.length() - 1) {
+            return fileName.substring(lastDotIndex + 1);
+        }
+        return "sem_extensao";
+    }
+    
+    public static String adicionarExtensao(String fileName, String novaExtensao) {
+        int lastDotIndex = fileName.lastIndexOf(" (");
+        if (lastDotIndex > 0 && lastDotIndex < fileName.length() - 1) {
+            return fileName.substring(0, lastDotIndex) + "." + novaExtensao + fileName.substring(lastDotIndex);
+        }
+        return fileName;
+    }
 	
 	public File getFileByNode(DefaultMutableTreeNode node) {
 		File retorno = null;

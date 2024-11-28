@@ -1,11 +1,12 @@
 import java.io.*;
 import java.util.zip.*;
 
+import javax.swing.JOptionPane;
+
 public class CompactacaoUtils {
 
-    public static void compactar(File arquivo) throws IOException {
-//    	|| !arquivo.isFile()
-        if (!arquivo.exists() ) {
+    public static Boolean compactar(File arquivo) throws IOException {
+        if (!arquivo.exists() || !arquivo.isFile()) {
             throw new IllegalArgumentException("O arquivo especificado não é válido.");
         }
 
@@ -28,9 +29,17 @@ public class CompactacaoUtils {
         if (!arquivo.delete()) {
             throw new IOException("Não foi possível excluir o arquivo original.");
         }
+        
+        JOptionPane.showMessageDialog(
+                null,
+                "Arquivo compactado com sucesso: " + arquivoCompactado.getAbsolutePath(),
+                "Sucesso",
+                JOptionPane.INFORMATION_MESSAGE
+        );
+        return true;
     }
 
-    public static void descompactar(File arquivoCompactado) throws IOException {
+    public static Boolean descompactar(File arquivoCompactado) throws IOException {
         if (!arquivoCompactado.exists() || !arquivoCompactado.isFile() || !arquivoCompactado.getName().endsWith(".zip")) {
             throw new IllegalArgumentException("O arquivo especificado não é um arquivo ZIP válido.");
         }
@@ -57,5 +66,13 @@ public class CompactacaoUtils {
         if (!arquivoCompactado.delete()) {
             throw new IOException("Não foi possível excluir o arquivo ZIP.");
         }
+        
+        JOptionPane.showMessageDialog(
+                null,
+                "Arquivo descompactado com sucesso: " + arquivoDescompactado.getAbsolutePath(),
+                "Sucesso",
+                JOptionPane.INFORMATION_MESSAGE
+        );
+        return true;
     }
 }

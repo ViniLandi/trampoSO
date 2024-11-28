@@ -26,6 +26,9 @@ import javax.swing.event.TreeSelectionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingWorker;
+import javax.swing.JLabel;
+import java.awt.Font;
 
 public class Principal extends JFrame {
 
@@ -37,6 +40,7 @@ public class Principal extends JFrame {
 	private DefaultMutableTreeNode nodePai;
 	private TreeUtils treeUtils = new TreeUtils();
 	private JScrollPane scrollPaneChart = new JScrollPane();
+	private JLabel lblNewLabel = new JLabel("Carregando...");
 	
 
 	/**
@@ -61,7 +65,7 @@ public class Principal extends JFrame {
 	public Principal() {
 		
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 1428, 741);
+		setBounds(100, 100, 1520, 777);
 		setLocationRelativeTo(null);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -70,7 +74,7 @@ public class Principal extends JFrame {
 		contentPane.setLayout(null);
 		
 		JScrollPane scrollPane = new JScrollPane();
-		scrollPane.setBounds(10, 33, 605, 658);
+		scrollPane.setBounds(18, 69, 697, 658);
 		contentPane.add(scrollPane);
 		tree = new JTree(new DefaultMutableTreeNode());
 		tree.setRootVisible(false);
@@ -116,8 +120,7 @@ public class Principal extends JFrame {
 		JMenuItem mntmNewMenuItem_5 = new JMenuItem("Atualizar");
 		mntmNewMenuItem_5.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				nodePai = treeUtils.atualizar(nodePai);
-				tree.setModel(new DefaultTreeModel(nodePai));
+				atualizar();
 			}
 		});
 		mnNewMenu_2.add(mntmNewMenuItem_5);
@@ -134,7 +137,9 @@ public class Principal extends JFrame {
 		            File selectedFile = (File) userObject;
 		            System.out.println("Arquivo selecionado para compactar: " + selectedFile.getAbsolutePath());
 		            try {
-						CompactacaoUtils.compactar(selectedFile);
+		            	Boolean sucesso = CompactacaoUtils.compactar(selectedFile);
+						if (sucesso)
+							atualizar();
 					} catch (Exception e1) {
 						
 						e1.printStackTrace();
@@ -157,7 +162,9 @@ public class Principal extends JFrame {
 		            File selectedFile = (File) userObject;
 		            System.out.println("Arquivo selecionado para descompactar: " + selectedFile.getAbsolutePath());
 		            try {
-						CompactacaoUtils.descompactar(selectedFile);
+		            	Boolean sucesso = CompactacaoUtils.descompactar(selectedFile);
+						if (sucesso)
+							atualizar();
 					} catch (Exception e1) {
 						
 						e1.printStackTrace();
@@ -223,10 +230,23 @@ public class Principal extends JFrame {
 		mnNewMenu_1.add(mntmNewMenuItem_1);
 		scrollPaneChart.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 
-		scrollPaneChart.setBounds(633, 33, 769, 658);
+		scrollPaneChart.setBounds(725, 69, 769, 658);
 		contentPane.add(scrollPaneChart);
 		
+		
+		lblNewLabel.setVisible(false);
+		lblNewLabel.setFont(new Font("Tahoma", Font.BOLD, 18));
+		lblNewLabel.setBounds(18, 33, 204, 25);
+		contentPane.add(lblNewLabel);
+		
 		createPieChart(new HashMap<>());
+	}
+	
+	private void atualizar() {
+		lblNewLabel.setVisible(true);
+		nodePai = treeUtils.atualizar(nodePai);
+		tree.setModel(new DefaultTreeModel(nodePai));
+		lblNewLabel.setVisible(false);
 	}
 	
 	private void trocarDiretorio() {
@@ -236,37 +256,33 @@ public class Principal extends JFrame {
 		int result = fileChooser.showOpenDialog(this);
 		if (result == JFileChooser.APPROVE_OPTION) {
 			File diretorioRaiz = fileChooser.getSelectedFile();
-    		nodePai = treeUtils.loadDirectoryTree(nodePai, diretorioRaiz);
-//			Thread thread = new Thread() {
-//			    @Override
-//			    public void run() {
-//			        for (int i = 1; i <= 10; i++) {
-//			        	if (i == 1)
-//			            System.out.println("Thread: " + TreeUtils.leitura);
-//			            try {
-//			                Thread.sleep(500);
-//			            } catch (InterruptedException e) {
-//			                e.printStackTrace();
-//			            }
-//			        }
-//			    }
-//			};
-//			thread.run();
-			tree.setModel(new DefaultTreeModel(nodePai));
+			lblNewLabel.setVisible(true);
+			SwingWorker<Void, Void> worker = new SwingWorker<>() {
+			    @Override
+			    protected Void doInBackground() {
+			        // Executa o método pesado em uma thread separada
+			        nodePai = treeUtils.loadDirectoryTree(nodePai, diretorioRaiz);
+			        return null;
+			    }
+
+			    @Override
+			    protected void done() {
+			        try {
+			            // Atualiza a interface gráfica após o término do processamento
+			            lblNewLabel.setVisible(false); // Esconde o label
+			            tree.setModel(new DefaultTreeModel(nodePai)); // Atualiza o JTree
+			    		tree.setRootVisible(true);
+			        } catch (Exception e) {
+			            e.printStackTrace();
+			        }
+			    }
+			};
+
+			// Inicia o SwingWorker
+			worker.execute();
 		}
-		tree.setRootVisible(true);
 	}
 	
-    private String getFileExtension(File file) {
-        String fileName = file.getName();
-        int lastDotIndex = fileName.lastIndexOf('.');
-        if (lastDotIndex > 0 && lastDotIndex < fileName.length() - 1) {
-            return fileName.substring(lastDotIndex + 1);
-        }
-        return "sem_extensao";
-    }
-	
-    // Método recursivo para ler arquivos e subpastas
     private void readFilesRecursively(File folder, 
 //    		Map<String, Integer> extensionCounts
     		Map<String, Long> extensionCounts
@@ -275,11 +291,9 @@ public class Principal extends JFrame {
         if (files != null) {
             for (File file : files) {
                 if (file.isDirectory()) {
-                    // Chamada recursiva para subpastas
                     readFilesRecursively(file, extensionCounts);
                 } else {
-                    // Processar arquivo
-                    String extension = getFileExtension(file);
+                    String extension = treeUtils.getFileExtension(file);
 //                    extensionCounts.put(extension, extensionCounts.getOrDefault(extension, 0) + 1);
                     extensionCounts.put(extension, extensionCounts.getOrDefault(extension, 0L) + file.length());
                 }
@@ -303,16 +317,16 @@ public class Principal extends JFrame {
         	dataset.setValue(entry.getKey() + " (" + treeUtils.formatFileSize(size) + ") (" + String.format("%.2f", percentage) + "%) ", size);
 		}
 
-        // Criar o gráfico de pizza
+
         JFreeChart chart = ChartFactory.createPieChart3D(
-            "Porcentagem por arquivos no diretório", // Título
-            dataset,                      // Dados
-            true,                         // Mostrar legenda
-            true,                         // Usar tooltips
-            false                         // Não gerar URL
+            "Porcentagem por arquivos no diretório",
+            dataset,                      
+            true,                         
+            true,                         
+            false                        
         );
-        		
-		// Painel do gráfico
+
+
 		chartPanel = new ChartPanel(chart);
 		scrollPaneChart.setViewportView(chartPanel);
         chartPanel.revalidate();
